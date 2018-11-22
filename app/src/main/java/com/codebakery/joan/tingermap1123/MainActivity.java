@@ -13,6 +13,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.TextView;
 
 import com.naver.maps.geometry.LatLng;
@@ -26,7 +27,6 @@ import com.naver.maps.map.overlay.Overlay;
 import com.naver.maps.map.util.MarkerIcons;
 
 import java.util.ArrayList;
-import java.util.Collections;
 
 public class MainActivity extends AppCompatActivity {
     NaverMap naverMap = null;
@@ -35,18 +35,75 @@ public class MainActivity extends AppCompatActivity {
     private ArrayList<Marker> markerList = null;
     private Marker marker = null;
 
+    Adapter adapter = null;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
         markerList = new ArrayList<>();
+
+        ((Button)findViewById(R.id.button)).setOnClickListener(this::onClick);
+
         MapFragment mapFragment = (MapFragment)getSupportFragmentManager().findFragmentById(R.id.map_fragment);
         if (mapFragment == null) {
             mapFragment = MapFragment.newInstance();
             getSupportFragmentManager().beginTransaction().add(R.id.map_fragment, mapFragment).commit();
         }
         mapFragment.getMapAsync(this::onMapReady);
+        adapter = new Adapter();
+        RecyclerView recyclerView = findViewById(R.id.recycler_view);
+        recyclerView.setAdapter(adapter);
+    }
+
+    /*
+    * 검색버튼 클릭
+    * */
+    private void onClick(View view) {
+        switch(view.getId()){
+            case R.id.button :
+                LatLng latLng = searchMeetupSpot();
+                PointF point = new PointF((float)latLng.latitude,(float)latLng.longitude);
+
+                View circle = findViewById(R.id.circle);
+
+                int radius = getResources().getDimensionPixelSize(R.dimen.pick_radius);
+                circle.setX(point.x - radius);
+                circle.setY(point.y - radius);
+                circle.setVisibility(View.VISIBLE);
+                adapter.submitList(naverMap.pickAll(point, radius));
+                break;
+        }
+    }
+
+    /*
+    * 중심점 찾아주는 메서드
+    * */
+    private LatLng searchMeetupSpot() {
+
+        double minX=0.0, maxX=0.0, minY=0.0, maxY=0.0;
+
+        double[][] markerArray = null;
+        if (markerList!=null){
+            markerArray = new double[markerList.size()][2];
+            for(int i=0 ; i<markerList.size() ; i++){
+                markerArray[i][0] = markerList.get(i).getPosition().latitude; // X,위도
+                markerArray[i][1] = markerList.get(i).getPosition().longitude; // Y,경도
+            }
+        }
+
+        if (markerArray.length > 0){
+            for(int i=0; i< markerArray.length; i++){
+                minX = (markerArray[i][0] < minX || minX == 0) ? markerArray[i][0] : minX;
+                maxX = (markerArray[i][0] > maxX || maxX == 0) ? markerArray[i][0] : maxX;
+                minY = (markerArray[i][1] < minY || minY == 0) ? markerArray[i][1] : minY;
+                maxY = (markerArray[i][1] > maxY || maxY == 0) ? markerArray[i][1] : maxY;
+            }
+        }
+
+        return new LatLng((minX + maxX) /2, (minY + maxY) /2);
+       // return new LatLng(minX+((maxX-minX)/2), minY+((maxY-minY)/2));
     }
 
     @UiThread
@@ -56,7 +113,7 @@ public class MainActivity extends AppCompatActivity {
         this.naverMap = map;
         naverMap.setOnMapClickListener(this::onMapClick);
 
-        Adapter adapter = new Adapter();
+        /*Adapter adapter = new Adapter();
 
         RecyclerView recyclerView = findViewById(R.id.recycler_view);
         recyclerView.setAdapter(adapter);
@@ -75,7 +132,7 @@ public class MainActivity extends AppCompatActivity {
         naverMap.addOnCameraChangeListener((reason, animated) -> {
             circle.setVisibility(View.GONE);
             adapter.submitList(Collections.emptyList());
-        });
+        });*/
     }
 
     private void onMapClick(PointF pointF, LatLng latLng) {
@@ -92,6 +149,10 @@ public class MainActivity extends AppCompatActivity {
         marker.setOnClickListener(this::onClick);
     }
 
+    /*
+    * 지도 클릭
+    * 마커 표시
+    * */
     private boolean onClick(Overlay overlay) {
         marker = (Marker)overlay;
         marker.setMap(null);

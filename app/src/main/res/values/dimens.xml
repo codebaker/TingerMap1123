@@ -16,5 +16,5 @@
     <dimen name="map_padding_bottom">100dp</dimen>
     <dimen name="scroll_by_x">200dp</dimen>
     <dimen name="scroll_by_y">-100dp</dimen>
-    <dimen name="pick_radius">100dp</dimen>
+    <dimen name="pick_radius">30dp</dimen>
 </resources>
