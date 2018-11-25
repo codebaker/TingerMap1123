@@ -17,6 +17,7 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import com.naver.maps.geometry.LatLng;
+import com.naver.maps.geometry.LatLngBounds;
 import com.naver.maps.map.MapFragment;
 import com.naver.maps.map.NaverMap;
 import com.naver.maps.map.Pickable;
@@ -53,8 +54,8 @@ public class MainActivity extends AppCompatActivity {
         }
         mapFragment.getMapAsync(this::onMapReady);
         adapter = new Adapter();
-        RecyclerView recyclerView = findViewById(R.id.recycler_view);
-        recyclerView.setAdapter(adapter);
+        //RecyclerView recyclerView = findViewById(R.id.recycler_view);
+        //recyclerView.setAdapter(adapter);
     }
 
     /*
@@ -66,12 +67,12 @@ public class MainActivity extends AppCompatActivity {
                 LatLng latLng = searchMeetupSpot();
                 PointF point = new PointF((float)latLng.latitude,(float)latLng.longitude);
 
-                View circle = findViewById(R.id.circle);
+                //View circle = findViewById(R.id.circle);
 
                 int radius = getResources().getDimensionPixelSize(R.dimen.pick_radius);
-                circle.setX(point.x - radius);
-                circle.setY(point.y - radius);
-                circle.setVisibility(View.VISIBLE);
+//                circle.setX(point.x - radius);
+//                circle.setY(point.y - radius);
+//                circle.setVisibility(View.VISIBLE);
                 adapter.submitList(naverMap.pickAll(point, radius));
                 break;
         }
@@ -82,7 +83,7 @@ public class MainActivity extends AppCompatActivity {
     * */
     private LatLng searchMeetupSpot() {
 
-        double minX=0.0, maxX=0.0, minY=0.0, maxY=0.0;
+        double minX=0.0, maxX=0.0, minY=0.0, maxY=0.0 ,x,y;
 
         double[][] markerArray = null;
         if (markerList!=null){
@@ -101,8 +102,20 @@ public class MainActivity extends AppCompatActivity {
                 maxY = (markerArray[i][1] > maxY || maxY == 0) ? markerArray[i][1] : maxY;
             }
         }
+        x=minX+((maxX-minX)/2);
+        y=minY+((maxY-minY)/2);
+        LatLng latLng=new LatLng(x,y);
 
-        return new LatLng((minX + maxX) /2, (minY + maxY) /2);
+        LatLngBounds bounds = new LatLngBounds(new LatLng(minX,minY),new LatLng(maxX,maxY));
+        Log.w("[kja]중심점","위도 : " + x +" / 경도 : "+ y);
+        Log.w("[kja]중심점","위도 : " + bounds.getCenter().latitude +" / 경도 : "+ bounds.getCenter().longitude);
+
+
+        marker = new Marker(MarkerIcons.YELLOW);
+        marker.setPosition(latLng);
+        marker.setMap(naverMap);
+
+        return latLng;
        // return new LatLng(minX+((maxX-minX)/2), minY+((maxY-minY)/2));
     }
 
@@ -145,6 +158,7 @@ public class MainActivity extends AppCompatActivity {
         marker.setMap(naverMap);
 
         markerList.add(marker);
+        Log.w("[kja]다각형","위도 : " + marker.getPosition().latitude+" / 경도 : "+ marker.getPosition().longitude);
 
         marker.setOnClickListener(this::onClick);
     }
@@ -158,7 +172,7 @@ public class MainActivity extends AppCompatActivity {
         marker.setMap(null);
         markerList.remove(marker);
         for (Marker m :markerList) {
-            Log.e("/marker : ",m.getCaptionText() + " / "+ m.getPosition());
+            Log.w("[kja]/marker : ",m.getCaptionText() + " / "+ m.getPosition());
         }
         return true;
     }
